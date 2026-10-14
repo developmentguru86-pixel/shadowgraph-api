@@ -1,0 +1,218 @@
+# ShadowGraph Market Intelligence
+
+ShadowGraph is an agent-first, pay-per-call global evidence-ranked relationship intelligence service.
+
+Base URL: https://shadowalpha.online
+Website (same app, every path below also works there): https://shadowalpha.online
+MCP endpoint: https://shadowalpha.online/_api/mcp
+A2A endpoint: https://shadowalpha.online/_api/a2a
+A2A Agent Card: https://shadowalpha.online/.well-known/agent-card.json
+REST paid endpoint: https://shadowalpha.online/_api/machine/intelligence
+Free agent preview: https://shadowalpha.online/_api/agent_preview
+Free factual query endpoint: POST https://shadowalpha.online/_api/free_query
+Service health: https://shadowalpha.online/_api/health
+OpenAPI: https://shadowalpha.online/openapi.json
+API documentation (human-readable, examples, try it): https://shadowalpha.online/docs
+MCP registry manifest: https://shadowalpha.online/server.json
+
+## Global coverage
+
+- Türkiye: KAP official disclosures + public procurement radar + BIST market layer
+- United States: SEC EDGAR official company filings
+- European Union: TED official procurement Search API
+- Global: Yahoo cross-asset/company market data
+- Global infrastructure: PeeringDB facilities and internet exchanges across major hubs
+- Global news: thematic AI, telecom, energy, banking and logistics feeds
+- Relationship graph: persistent PostgreSQL-backed evidence/inference graph
+- Lead/lag detector: 24 months of daily closes, market-residualized with SPY when available, all directed pair × 1-5 trading-day lags corrected together with Benjamini-Hochberg FDR, followed by held-out out-of-sample validation
+- Commercial lead engine: evidence-backed candidate supplier opportunities from KAP/public procurement/TED
+
+Free machine-readable endpoints:
+- /_api/global_official
+- /_api/global_news
+- /_api/global_markets
+- /_api/global_infra
+- /_api/graph
+- /_api/price_lag
+- /_api/leads
+
+## MCP tools
+
+- shadowgraph_market_recap — free factual global market recap
+- shadowgraph_company_filings — free recent SEC EDGAR filings by ticker
+- shadowgraph_eu_tenders — free EU TED procurement search
+- shadowgraph_free_preview — free live preview
+- shadowgraph_global_snapshot — $0.50 per call (recommended first paid call)
+- shadowgraph_market_signal — $0.75 per call
+- shadowgraph_procurement_opportunity — $1.00 per call
+- shadowgraph_global_brief — $2.50 per call
+- shadowgraph_deep_research — $5.00 per call
+- shadowgraph_service_info — free
+
+Legacy aliases shadowgraph_hidden_chain, shadowgraph_alpha and shadowgraph_opportunity remain callable for backward compatibility but are intentionally not advertised in tools/list.
+
+MCP transport: Streamable HTTP.
+Supported protocol versions: 2026-07-28 and 2025-11-25.
+
+Modern discovery starts with JSON-RPC method server/discover and then tools/list.
+For MCP 2026-07-28 include MCP-Protocol-Version and Mcp-Method headers.
+For tools/call also include Mcp-Name.
+
+## REST modes
+
+GET /_api/agent_preview
+
+Use this free endpoint first to inspect current live coverage, graph size and the top measured price-lag relationship.
+
+POST /_api/free_query
+
+Free factual query types:
+- {"type":"market_recap","limit":5}
+- {"type":"company_filings","symbol":"NVDA","limit":5}
+- {"type":"eu_tenders","keyword":"data center","country":"DE","limit":5}
+
+These free tools intentionally return compact, directly verifiable evidence. Paid products add graph inference, cross-source synthesis, relationship-state estimation and deeper research.
+
+POST /_api/machine/intelligence
+
+JSON:
+{"mode":"hidden_chain"}
+{"mode":"alpha"}
+{"mode":"opportunity"}
+{"mode":"global_brief"}
+{"mode":"deep_research"}
+
+## Payment
+
+Paid calls use HTTP 402 Machine Payments Protocol with Stripe.
+An unpaid request receives:
+WWW-Authenticate: Payment ...
+
+Fulfill the payment challenge, retry the identical request with:
+Authorization: Payment <credential>
+
+A successful paid response includes:
+Payment-Receipt: <receipt>
+
+Over MCP (https://shadowalpha.online/_api/mcp) the MPP MCP binding applies instead:
+- an unpaid tools/call returns JSON-RPC error -32042 "Payment Required" with error.data.challenges (native JSON)
+- retry the identical tools/call with params._meta["org.paymentauth/credential"] = {"challenge": <challenge>, "payload": {"spt": "<Stripe shared payment token>"}}
+- the receipt is returned in result._meta["org.paymentauth/receipt"]
+- -32043 = payment verification failed (a replacement challenge is included)
+
+Current prices:
+hidden_chain: $0.50
+alpha: $0.75
+opportunity: $1.00
+global_brief: $2.50
+deep_research: $5.00
+
+## What the service returns
+
+ShadowGraph combines official corporate disclosures, public procurement, infrastructure, news and cross-market data into evidence-ranked relationship, relative-pricing and commercial-opportunity inference across regions. Inferred graph edges, lead/lag relationships and commercial leads are hypotheses/candidates, not proof of causation, contracts, bidding activity or guaranteed investment returns.
+
+Lead/lag validation is conservative: two years of daily closes are converted to log returns; SPY is used as an optional market factor estimated only on the discovery window; the first 65% is discovery; all directed pair × 1–5 day lag hypotheses are corrected together using Benjamini-Hochberg FDR at 5%; the final 35% is held out and split into three forward OOS folds. Published signal fields are leader, follower, lagDays, direction, trainCorr, trainQ, testCorr, testP, zeroLagCorr, stability and windows. If no relationship survives both stages, ShadowGraph publishes no signal.
+
+Audit baseline on 2026-10-08: the same 31-ticker / 2-year dataset produced 4,650 naive pair×lag tests. At an uncorrected p<0.004 threshold, 46 hits (0.989%) appeared versus 18.6 expected under a simple pure-chance benchmark. After market-factor adjustment, Benjamini-Hochberg FDR and held-out OOS validation, zero relationships were publishable. This illustrates the multiple-testing risk; raw p-value hits must never be presented as validated signals.
+
+## Internet Outage Radar (live, free)
+
+Research: do outages move the provider's stock? GET https://shadowalpha.online/_api/research/outage_impact
+Pre-registered event study of 26 major public outages (AWS, Cloudflare, Azure, Google Cloud, Akamai, Fastly, CrowdStrike, 2011-2025),
+SPY market model. Result: NOT supported. Infrastructure outages show no significant abnormal return on the day (mean -0.34%, t -0.55)
+or after it; a short at the outage-day close held 5 sessions lost 1.03% on average net of costs. CrowdStrike 2024 (own-product
+failure) is the only large move. Do not treat ShadowGraph outage detections as trading signals.
+
+Risk outlook (predictive signals, free): https://shadowalpha.online/outlook — JSON: GET /_api/radar/outlook
+- Early warnings for gray failures (rule ew-v2: >= 4 independent organisations and 30% of a provider/region/CDN/DNS group of 8+
+  organisations at 2.5x their own 24h median latency or failing, re-measured immediately and held for two consecutive sweeps),
+  each scored automatically against later incidents; the hit rate and median lead time are published. Rule ew-v1 was retired
+  on 2026-10-09 after 0 of 10 warnings were confirmed (measurement-origin artefact); its record stays public.
+- TLS certificate expiry for every monitored endpoint (tiers: expired, < 7 days, renewal overdue for auto-renewing CAs, renewal window).
+- Domain registration expiry from registry RDAP; infrastructure changes (hosting, region, CDN, DNS, email) detected on re-mapping.
+
+Stack check (free, interactive): https://shadowalpha.online/check — pick the tools a business uses and get the largest
+single-provider share (graded A–F: A < 20%, B < 35%, C < 50%, D < 65%, F >= 65%), failure scenarios and recommendations.
+Shareable: /check?s={radar service ids, comma-separated}&d={own domain}. Outage simulator: /check?w={provider or "AWS us-east-1"}&k=provider|region.
+
+Data report "Who runs the internet?" (dated daily snapshot, citable): https://shadowalpha.online/report
+JSON: GET https://shadowalpha.online/_api/report/internet — blast radius per provider (share of monitored services depending on it via
+hosting, CDN or DNS), hosting/CDN/DNS/email concentration, single-vendor stacks, sector dependencies, SEC revenue concentration.
+
+Upstream Signals (live, rule cs-v1): https://shadowalpha.online/signals
+When >= 2 companies that share a cloud region, hosting provider, CDN or DNS provider declare incidents on their own status pages
+within 60 minutes, and the chance of that by coincidence is below 1 in 1,000 (Poisson-binomial on each company's own 84-day incident
+rate, hour-of-week adjusted), the shared provider is flagged, often before the provider posts anything. Evidence tiers: confirmed
+(provider's own record: AWS Health Dashboard, Google Cloud, Cloudflare, Akamai, Vercel), named (a company names the provider), statistical.
+JSON: GET https://shadowalpha.online/_api/upstream/signals (active signals, last 30 days, 84-day track record with sensitivity
+and recall against provider records). Track record: https://shadowalpha.online/research/upstream-signals
+
+Research (recomputed hourly, citable, versioned rules): https://shadowalpha.online/research
+Pages: /research/shared-fate, /research/upstream-signals, /research/radar-accuracy, /research/concentration, /research/methods, /research/data
+- sf-v1: shared fate in official incident records of ~150 companies (182 machine-readable status pages, 84-day window). Statistic: pairs
+  of incidents from different companies on the same hosting provider / cloud region / CDN / DNS provider declared within 60 minutes.
+  Null: each company's history rotated by a random whole number of weeks (keeps rates and hour-of-week rhythm), 1,000 permutations,
+  negative control (random groups) and injection-recovery positive control; per-provider tests Holm-corrected.
+- val-v1: radar DOWN episodes (>= 2 consecutive failed 5-minute sweeps) validated against official incidents: recall by impact,
+  precision, timeliness, all with 95% intervals (Wilson / bootstrap). Misses are listed, not hidden.
+- conc-v1: Herfindahl-Hirschman concentration per infrastructure layer and blast radius per provider (unit: organisation).
+JSON: GET https://shadowalpha.online/_api/research/overview
+Open dataset (CSV, CC BY 4.0): GET https://shadowalpha.online/_api/research/dataset?table=services|sweeps|episodes|hourly|status_incidents|provider_incidents|upstream_signals[&days=1..31]
+
+Live status of cloud regions, APIs, SaaS and the most-visited websites worldwide and in Europe (Tranco research ranking),
+about 3,200 services, refreshed every 5 minutes: https://shadowalpha.online/radar
+Machine-readable: GET https://shadowalpha.online/_api/radar/status (no auth).
+Returns per service: state (up / degraded / down), HTTP status, latency, 24h uptime, and the infrastructure behind it
+(hosting provider, cloud region, hosting country, CDN, DNS provider), plus open provider incidents with blast radius
+(services down and services at risk on the same provider / region / CDN / DNS), a 24h error timeline, recent state
+changes and provider concentration shares.
+Worldwide view: GET https://shadowalpha.online/_api/radar/global (no auth) — every 30 minutes, infrastructure
+anchors and every service the main node sees failing are checked from one probe on each of six continents (NA, SA, EU,
+AS, OC, AF; Globalping network). Use it to answer "is it down everywhere or only in one region?".
+Service rows carry hostingCity / hostingLat / hostingLon where the origin server is directly visible (DB-IP Lite, approximate).
+Method: HTTP probes every 5 minutes from the main measurement node (AWS us-east-1, N. Virginia); a service is "down" after two consecutive failures; a provider
+incident requires several independent services of the same group failing (a failing AWS regional S3 canary lowers
+the bar). If most probes fail at once, incidents are suppressed (vantage-point problem). Unreachable targets are pruned.
+Use it to answer: "Is AWS / Cloudflare / Stripe down right now?", "Which services are affected?", "What else is at risk?"
+Human-readable status pages: https://shadowalpha.online/is-it-down and https://shadowalpha.online/status/{provider-or-service}
+(e.g. /status/aws, /status/cloudflare, /status/azure, /status/google-cloud, /status/stripe, /status/github, /status/openai).
+
+Search (free, no auth): GET https://shadowalpha.online/_api/search?q={company, domain, hosting/CDN/DNS provider or cloud region}
+Returns monitored services with live state, providers, cloud regions, open incidents, SEC customer-concentration companies,
+public AI agents and, for a full domain, a live infrastructure scan. Human view with dependency graph: /search?q=...
+
+Vendor Map (free, interactive): https://shadowalpha.online/vendors — paste up to 300 vendor domains (CSV/TSV or one per line)
+and get hosting, cloud region, CDN, DNS, email, network owner and country, TLS certificate and domain expiry per vendor,
+plus portfolio concentration. Results are kept 30 days; CSV export.
+
+Agents layer (free): GET https://shadowalpha.online/_api/agents/globe — public MCP / A2A agent endpoints from the
+official MCP Registry and the A2A Registry placed by hosting location, their reachability (one HTTPS request per host every hour;
+any answer below 500 counts as reachable) and the requests agents send to ShadowGraph (city-level, no IP addresses stored).
+
+## Supply-chain dependency dataset
+
+Customer -> supplier revenue dependencies extracted from SEC annual filings (10-K, 20-F, 40-F) via inline XBRL ConcentrationRiskPercentage1. Each row: customer, customerTicker, supplier, supplierTicker, supplierCik, revenueShare, fiscalPeriodEnd, form, filedAt, attribution, sourceUrl, evidence.
+- attribution "official": the filer XBRL-tagged both the customer and the percentage.
+- attribution "inferred": the percentage is XBRL-tagged, the customer was tagged anonymously and the name comes from a sentence in the same filing (kept as evidence).
+- Only the latest fiscal period of each filer's latest annual filing is used; refreshed weekly.
+
+Free sample (no auth): GET https://shadowalpha.online/_api/dataset/sample  (add ?format=csv for CSV)
+Full dataset (subscription, $99/month): GET https://shadowalpha.online/_api/dataset/full with header "Authorization: Bearer sgd_..." (add ?format=csv). Subscribe at https://shadowalpha.online/data
+
+Evidence on tradability: GET https://shadowalpha.online/_api/research/customer_momentum
+Pre-registered event study (daily adaptation of Cohen & Frazzini 2008): suppliers react on the same day as a major customer's >=3 sigma shock (strongly significant), but post-event drift is not significantly larger than for random unlinked suppliers. Conclusion: verified exposure data, not a trading signal.
+
+## Discovery
+
+ShadowGraph is listed on MPPScan under its public origin:
+https://shadowalpha.online
+
+ShadowGraph is also published as an active remote server in the Official MCP Registry:
+online.shadowalpha/shadowgraph
+
+ShadowGraph also publishes an A2A v1.0 Agent Card:
+https://shadowalpha.online/.well-known/agent-card.json
+
+Use the MCP endpoint directly when an MCP client is available. Otherwise use the OpenAPI/REST endpoint.
+
+Health and freshness can be checked without authentication at /_api/health. Business conversion telemetry is intentionally not public.

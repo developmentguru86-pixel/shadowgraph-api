@@ -1,0 +1,30 @@
+# Copy to .github/workflows/dependency-check.yml
+# Before a deploy (or on a schedule), warns when a provider you depend on is down.
+name: Dependency status
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check providers on ShadowGraph
+        env:
+          SLUGS: "aws github cloudflare stripe-api"   # your dependencies
+        run: |
+          fail=0
+          for s in $SLUGS; do
+            page=$(curl -sf "https://shadowalpha.online/_api/status/page?slug=$s")
+            down=$(echo "$page" | jq '[.rows[] | select(.state=="down")] | length')
+            open=$(echo "$page" | jq '[.incidents[] | select(.status=="open")] | length')
+            name=$(echo "$page" | jq -r '.name')
+            if [ "$down" -gt 0 ] || [ "$open" -gt 0 ]; then
+              echo "::warning title=$name is having problems::$down endpoint(s) down, $open open incident(s) - https://shadowalpha.online/status/$s"
+              fail=1
+            else
+              echo "$name: up"
+            fi
+          done
+          # exit $fail   # uncomment to block the workflow while a dependency is down
