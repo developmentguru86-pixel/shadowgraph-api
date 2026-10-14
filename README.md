@@ -1,5 +1,7 @@
 # ShadowGraph API
 
+![ShadowGraph: Is it down? Since when, and why.](assets/shadowgraph-card.jpg)
+
 **Is it down, since when, and why?** Independent live status for about 3,200 internet services (APIs, SaaS, banks, the most-visited websites, cloud regions), checked every 5 minutes, re-checked from six continents, with the infrastructure each service runs on: hosting provider, cloud region, CDN, DNS and email.
 
 No sign-up and no API key for the status, search and research endpoints. AI agents can connect over **MCP** or **A2A**.
